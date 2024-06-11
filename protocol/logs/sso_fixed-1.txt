@@ -1,0 +1,56 @@
+INPUT:
+	 Protocol: SingleSignOn 
+
+Types: Agent C,idp,SP;
+       Number URI,ID,Data;
+       Function h,sk
+
+Knowledge: C: C,idp,SP,pk(idp);
+	   idp: C,idp,pk(idp),inv(pk(idp));
+	   SP: idp,SP,pk(idp)
+          where SP!=C, SP!=idp, C!=idp
+
+Actions:
+       C  *->* idp : C,idp,SP,ID
+       idp *->* C   : ID,SP,idp,{ID,C,idp,SP}inv(pk(idp))
+
+       [C] *->* SP  : ID,SP,idp,{ID,C,idp,SP}inv(pk(idp))
+       SP *->* [C] : Data,ID
+
+Goals:
+			 idp authenticates C on ID
+       C authenticates SP on Data
+       Data secret between SP,C 
+
+
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  strong_auth
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 123 ms
+  parseTime 0 ms
+  visitedNodes: 31 nodes
+  depth: 3 plies
+
+ATTACK TRACE:
+(x502,1) -> i: {{x502,idp,x405,ID(1)}_inv(authChCr(x502))}_(confChCr(idp))
+i -> (idp,1): {{x502,idp,x405,ID(1)}_inv(authChCr(x502))}_(confChCr(idp))
+(idp,1) -> i: {{ID(1),x405,idp,{ID(1),x502,idp,x405}_inv(pk(idp))}_inv(authChCr(idp))}_(confChCr(x502))
+i -> (idp,2): {{x502,idp,x405,ID(1)}_inv(authChCr(x502))}_(confChCr(idp))
+(idp,2) -> i: {{ID(1),x405,idp,{ID(1),x502,idp,x405}_inv(pk(idp))}_inv(authChCr(idp))}_(confChCr(x502))
+
+
+% Reached State:
+% 
+% request(idp,x502,pidpCID,ID(1),2)
+% request(idp,x502,pidpCID,ID(1),1)
+% state_ridp(idp,1,inv(pk(idp)),pk(idp),x502,inv(pseudonym(idp)),inv(confChCr(idp)),inv(authChCr(idp)),pseudonym(idp),ID(1),x405,{x502,idp,x405,ID(1)}_inv(authChCr(x502)),{{x502,idp,x405,ID(1)}_inv(authChCr(x502))}_(confChCr(idp)),{{ID(1),x405,idp,{ID(1),x502,idp,x405}_inv(pk(idp))}_inv(authChCr(idp))}_(confChCr(x502)),2)
+% state_rSP(x30,0,pk(idp),idp,inv(pseudonym(x30)),inv(confChCr(x30)),inv(authChCr(x30)),pseudonym(x30),1)
+% state_rC(x502,1,pk(idp),x405,idp,inv(pseudonym(x502)),inv(confChCr(x502)),inv(authChCr(x502)),pseudonym(x502),ID(1),{{x502,idp,x405,ID(1)}_inv(authChCr(x502))}_(confChCr(idp)),1)
+% state_ridp(idp,1,inv(pk(idp)),pk(idp),x502,inv(pseudonym(idp)),inv(confChCr(idp)),inv(authChCr(idp)),pseudonym(idp),ID(1),x405,{x502,idp,x405,ID(1)}_inv(authChCr(x502)),{{x502,idp,x405,ID(1)}_inv(authChCr(x502))}_(confChCr(idp)),{{ID(1),x405,idp,{ID(1),x502,idp,x405}_inv(pk(idp))}_inv(authChCr(idp))}_(confChCr(x502)),1)
+% state_rC(x31,0,pk(idp),x33,idp,inv(pseudonym(x31)),inv(confChCr(x31)),inv(authChCr(x31)),pseudonym(x31),2)
+% state_rSP(x35,0,pk(idp),idp,inv(pseudonym(x35)),inv(confChCr(x35)),inv(authChCr(x35)),pseudonym(x35),2)
+% witness(x502,idp,pidpCID,ID(1))

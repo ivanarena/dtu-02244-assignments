@@ -1,0 +1,24 @@
+Protocol: SecureTicket_Auth 
+
+Types: Agent Client,mitId,SecureTicket;
+       Number Sid,Data;
+       Function h,sk
+
+Knowledge: Client: Client,mitId,SecureTicket,pk(mitId);
+	   mitId: Client,mitId,pk(mitId),inv(pk(mitId));
+	   SecureTicket: mitId,SecureTicket,pk(mitId)
+          where SecureTicket!=Client, SecureTicket!=mitId, Client!=mitId
+
+Actions:
+       # Assumptions:
+       #   - validation_tls makes the channel SecureTicket<->Client secure (they share mitId certificate)
+
+       [Client] *->* mitId : Client,mitId,SecureTicket,Sid
+       mitId *->* Client : Sid,SecureTicket,mitId,{Sid,Client,mitId,SecureTicket}inv(pk(mitId))
+
+       [Client] *->* SecureTicket  : Sid,SecureTicket,mitId,{Sid,Client,mitId,SecureTicket}inv(pk(mitId))
+       SecureTicket *->* [Client] : Data,Sid
+
+Goals:
+       Client authenticates SecureTicket on Data
+       Data secret between SecureTicket,Client

@@ -1,0 +1,15 @@
+// User Login/data request
+uinfo = record[name:string{⊥}, password:string{server:server}] // {U: U, S}
+
+check_pw(db:array[uinfo{⊥}]{⊥}, name:string{⊥}, password:string{client:server})
+	returns ret:bool{client:server} // {U: U, S}
+
+	match: bool{client:server, server:server} := false; // {S: S}
+	for (i: int{server:server} := 0; i < db.length; i := i + 1)
+		if db[i].name = name && db[i].password = password // {S: S}
+			then match := true // {S: S}
+
+	ret := match // {U: U, S}
+
+	if_acts_for(check_pw, server)
+		then ret:=declassify(match, {client:server}) // {U: U, S}

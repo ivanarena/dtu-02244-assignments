@@ -1,0 +1,25 @@
+Protocol: SingleSignOn 
+
+Types: Agent C,idp,SP;
+       Number URI,ID,Data;
+       Function h,sk
+
+Knowledge: C: C,idp,SP,pk(idp);
+	   idp: C,idp,pk(idp),inv(pk(idp));
+	   SP: idp,SP,pk(idp)
+          where SP!=C, SP!=idp, C!=idp
+
+Actions:
+       [C] *->* SP  : C,SP,
+       SP *->* [C] : C,SP,ID,
+
+       C  *->* idp : C,idp,SP,ID,URI
+       idp *->* C   : ID,SP,idp,{ID,C,idp,SP}inv(pk(idp)),URI
+
+       [C] *->* SP  : ID,SP,idp,{ID,C,idp,SP}inv(pk(idp)),URI
+       SP *->* [C] : Data,ID
+
+Goals:
+       SP authenticates SP on 
+       C authenticates SP on Data
+       Data secret between SP,C

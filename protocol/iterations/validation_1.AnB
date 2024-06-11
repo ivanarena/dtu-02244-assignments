@@ -1,0 +1,20 @@
+Protocol: SecureTicket_Validation 
+
+Types: Agent Venue,SecureTicket;
+			Number VenueId,SessionId,TicketInfo,TicketOk;
+			Function h,sk
+
+Knowledge: Venue: Venue,SecureTicket,inv(pk(SecureTicket));
+			SecureTicket: Venue,SecureTicket,inv(pk(Venue))
+
+Actions:
+		# implement ticket validation
+		Venue *->* SecureTicket : SecureTicket,Venue,SessionId
+		Venue *->* SecureTicket : Venue,SecureTicket,TicketInfo,SessionId,{Venue,SecureTicket,SessionId,TicketInfo}inv(pk(SecureTicket))
+		SecureTicket *->* Venue : TicketOk,TicketInfo,SecureTicket,Venue,{TicketInfo,TicketOk,SessionSecureTicket,Venue}inv(pk(Venue))
+			
+Goals:
+		# add validation goal
+		TicketInfo secret between Venue,SecureTicket
+		SecureTicket authenticates Venue on TicketInfo
+		Venue authenticates SecureTicket on TicketOk

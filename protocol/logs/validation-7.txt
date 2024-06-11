@@ -1,0 +1,56 @@
+INPUT:
+   Protocol: SecureTicket_Validation 
+
+	Types: Agent Client, VenueDevice, server;
+				Number VenueId, TICKET, TicketConsumed;
+				Function h, sk
+
+	Knowledge: Client: Client, VenueDevice, server, pk(server);
+					VenueDevice: VenueDevice, Client, server, pk(server), inv(pk(server)), inv(pk(VenueDevice));
+				server: VenueDevice, Client, server, pk(VenueDevice), inv(pk(server));
+
+	Actions:    
+			# Assumptions:
+			#   - validation_tls makes the channel server<->Client secure (they share a secret thanks to mitId auth)
+			#   - authPseudo makes the channel server<->venueDevice secure
+			#   - given validation_tls and authPseudo, also the channel Client<->VenueDevice is secure
+
+			# establish TLS between Client <-> Server from authentication protocol
+			# login using data from the authentication protocol to see TICKET in the app
+
+			[Client] *->* VenueDevice : Client, VenueDevice, {TICKET, Datetime}pk(server)
+
+			VenueDevice *->* server : VenueDevice, server, Client, {TICKET, Datetime}pk(server)
+			server *->* VenueDevice : server, VenueDevice, {TicketConsumed}inv(pk(server))
+
+			VenueDevice *->* [Client] : {TicketConsumed}inv(pk(server))
+
+	Goals:
+			VenueDevice authenticates Client on TICKET
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  weak_auth
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 138 ms
+  parseTime 1 ms
+  visitedNodes: 37 nodes
+  depth: 3 plies
+
+ATTACK TRACE:
+i -> (x501,1): confChCr(i),{{x502,x501,{x307,x308}_(pk(server))}_inv(confChCr(i))}_(confChCr(x501))
+(x501,1) -> i: {{x501,server,x502,{x307,x308}_(pk(server))}_inv(authChCr(x501))}_(confChCr(server))
+i -> (server,1): {{x501,server,x502,{x307,x308}_(pk(server))}_inv(authChCr(x501))}_(confChCr(server))
+(server,1) -> i: {{server,x501,{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x501))
+i -> (x501,1): {{server,x501,{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x501))
+(x501,1) -> i: {{{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(x501))}_(confChCr(i))
+
+
+% Reached State:
+% 
+% request(x501,x502,pVenueDeviceClientTICKET,x307,1)
+% state_rVenueDevice(x501,2,inv(pk(x501)),inv(pk(server)),pk(server),server,x502,inv(pseudonym(x501)),inv(confChCr(x501)),inv(authChCr(x501)),pseudonym(x501),x308,x307,{x307,x308}_(pk(server)),{x502,x501,{x307,x308}_(pk(server))}_inv(confChCr(i)),{{x502,x501,{x307,x308}_(pk(server))}_inv(confChCr(i))}_(confChCr(x501)),confChCr(i),confChCr(i),{{x502,x501,{x307,x308}_(pk(server))}_inv(confChCr(i))}_(confChCr(x501)),{{x501,server,x502,{x307,x308}_(pk(server))}_inv(authChCr(x501))}_(confChCr(server)),TicketConsumed(2),{TicketConsumed(2)}_inv(pk(server)),{server,x501,{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(server)),{{server,x501,{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x501)),{{{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(x501))}_(confChCr(i)),1)
+% state_rserver(server,1,inv(pk(server)),pk(x501),x502,x501,inv(pseudonym(server)),inv(confChCr(server)),inv(authChCr(server)),pseudonym(server),x308,x307,{x307,x308}_(pk(server)),{x501,server,x502,{x307,x308}_(pk(server))}_inv(authChCr(x501)),{{x501,server,x502,{x307,x308}_(pk(server))}_inv(authChCr(x501))}_(confChCr(server)),TicketConsumed(2),{{server,x501,{TicketConsumed(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x501)),1)
+% state_rClient(x20,0,pk(server),server,x25,inv(pseudonym(x20)),inv(confChCr(x20)),inv(authChCr(x20)),pseudonym(x20),1)

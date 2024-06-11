@@ -1,0 +1,44 @@
+Protocol: SecureTicket_Purchase
+
+Types: Agent Client,Server,mobilePay;
+       Number LoginOk, TicketInfo, PurchaseId, PaymentInfo, PaymentConfirm, TICKET, TicketAck;
+       Function h, sk;
+       Format f1, f2, f3;
+
+Knowledge: Client: Client, mobilePay, Server, pk(Server), pk(mobilePay);
+	   mobilePay: Client, mobilePay, pk(mobilePay), inv(pk(mobilePay));
+	   Server: mobilePay, Server, Client, pk(mobilePay), pk(Server), inv(pk(Server));
+          where Server != Client, Server != mobilePay, Client != mobilePay
+
+Actions:
+       # establish TLS between Client <-> Server from authentication protocol
+       # login using data from the authentication protocol
+       Client *->* Server : {f1(CPR, PASSWORD)}pk(Server)
+       Server *->* Client : LoginOk
+
+       # Client requests ticket info
+       Client *->* Server : Client, Server, {TicketInfo}pk(Server)
+
+       # Server creates the transaction with mobilePay and sends the payment notice to the user
+       Server *->* Client : Server, Client, mobilePay, {{|f1(PurchaseId, TicketInfo)|}PASSWORD}inv(pk(Server))
+
+       # Client executes payment via mobilePay 
+       Client *->* mobilePay : Client, mobilePay, Server, {f1(PurchaseId, PaymentInfo)}pk(mobilePay)
+       mobilePay *->* Client : mobilePay, Client, {f3(PurchaseId, PaymentConfirm, Client, mobilePay, Server)}inv(pk(mobilePay))
+
+       # Client sends payment confirmation to Server
+       Client *->* Server : Client, Server, mobilePay, {{f3(PurchaseId, PaymentConfirm, Client, mobilePay, Server)}inv(pk(mobilePay))}pk(Server)
+       
+       # Server acknowledges payment and sends ticket to Client along with PurchaseId and Datetime
+       Server *->* Client : Server, Client, {{|f2(PurchaseId, TICKET, Datetime)|}PASSWORD}inv(pk(Server))
+
+       # Clients sends confirmation of received ticket along with Datetime to be validated by Server
+       Client *->* Server : Client, Server, {f1(TicketAck, Datetime)}pk(Server)
+
+Goals:
+       Server authenticates Client on TicketInfo
+       TicketInfo secret between Server, Client
+       PaymentInfo secret between mobilePay, Client
+       Client authenticates Server on TICKET
+       TICKET secret between Server, Client
+       Server authenticates Client on TicketAck

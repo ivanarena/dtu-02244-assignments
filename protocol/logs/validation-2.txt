@@ -1,0 +1,58 @@
+Verified for 1 sessions
+INPUT:
+   Protocol: SecureTicket_Validation 
+
+		Types: Agent Venue,SecureTicket;
+					Number VenueId,SessionId,TicketInfo,TicketOk;
+					Function h,sk
+
+		Knowledge: Venue: Venue,SecureTicket,inv(pk(SecureTicket));
+					SecureTicket: Venue,SecureTicket,inv(pk(Venue))
+
+		Actions:
+				# implement ticket validation
+				Venue *->* SecureTicket : Venue,SecureTicket,TicketInfo,{Venue,SecureTicket,TicketInfo}inv(pk(SecureTicket))
+				SecureTicket *->* Venue : TicketOk,TicketInfo,SecureTicket,Venue,{TicketInfo,TicketOk,SecureTicket,Venue}inv(pk(Venue))
+					
+		Goals:
+				# add validation goal
+				TicketInfo secret between Venue,SecureTicket
+				SecureTicket authenticates Venue on TicketInfo
+				Venue authenticates SecureTicket on TicketOk
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  strong_auth
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 45 ms
+  parseTime 0 ms
+  visitedNodes: 33 nodes
+  depth: 3 plies
+
+ATTACK TRACE:
+(x502,1) -> i: {{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502))}_(confChCr(x501))
+i -> (x501,1): {{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502))}_(confChCr(x501))
+(x501,1) -> i: {{TicketOk(2),TicketInfo(1),x501,x502,{TicketInfo(1),TicketOk(2),x501,x502}_inv(pk(x502))}_inv(authChCr(x501))}_(confChCr(x502))
+i -> (x501,2): {{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502))}_(confChCr(x501))
+(x501,2) -> i: {{TicketOk(3),TicketInfo(1),x501,x502,{TicketInfo(1),TicketOk(3),x501,x502}_inv(pk(x502))}_inv(authChCr(x501))}_(confChCr(x502))
+
+
+% Reached State:
+% 
+% request(x501,x502,pSecureTicketVenueTicketInfo,TicketInfo(1),2)
+% request(x501,x502,pSecureTicketVenueTicketInfo,TicketInfo(1),1)
+% contains(secrecyset(x501,2,pTicketInfo),x501)
+% contains(secrecyset(x501,2,pTicketInfo),x502)
+% secrets(TicketInfo(1),secrecyset(x501,2,pTicketInfo),i)
+% state_rSecureTicket(x501,1,inv(pk(x502)),x502,inv(pseudonym(x501)),inv(confChCr(x501)),inv(authChCr(x501)),pseudonym(x501),{x502,x501,TicketInfo(1)}_inv(pk(x501)),TicketInfo(1),{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502)),{{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502))}_(confChCr(x501)),TicketOk(3),{{TicketOk(3),TicketInfo(1),x501,x502,{TicketInfo(1),TicketOk(3),x501,x502}_inv(pk(x502))}_inv(authChCr(x501))}_(confChCr(x502)),2)
+% contains(secrecyset(x501,1,pTicketInfo),x501)
+% contains(secrecyset(x501,1,pTicketInfo),x502)
+% secrets(TicketInfo(1),secrecyset(x501,1,pTicketInfo),i)
+% witness(x501,x502,pVenueSecureTicketTicketOk,TicketOk(3))
+% state_rVenue(x30,0,inv(pk(x32)),x32,inv(pseudonym(x30)),inv(confChCr(x30)),inv(authChCr(x30)),pseudonym(x30),2)
+% state_rSecureTicket(x501,1,inv(pk(x502)),x502,inv(pseudonym(x501)),inv(confChCr(x501)),inv(authChCr(x501)),pseudonym(x501),{x502,x501,TicketInfo(1)}_inv(pk(x501)),TicketInfo(1),{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502)),{{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502))}_(confChCr(x501)),TicketOk(2),{{TicketOk(2),TicketInfo(1),x501,x502,{TicketInfo(1),TicketOk(2),x501,x502}_inv(pk(x502))}_inv(authChCr(x501))}_(confChCr(x502)),1)
+% state_rVenue(x502,1,inv(pk(x501)),x501,inv(pseudonym(x502)),inv(confChCr(x502)),inv(authChCr(x502)),pseudonym(x502),TicketInfo(1),{{x502,x501,TicketInfo(1),{x502,x501,TicketInfo(1)}_inv(pk(x501))}_inv(authChCr(x502))}_(confChCr(x501)),1)
+% witness(x502,x501,pSecureTicketVenueTicketInfo,TicketInfo(1))
+% witness(x501,x502,pVenueSecureTicketTicketOk,TicketOk(2))

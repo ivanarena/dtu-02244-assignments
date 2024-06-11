@@ -1,0 +1,42 @@
+Protocol: SecureTicket_Authentication 
+
+Types: Agent Client, Server, mitId;
+       Number SessionId, NClient, CPR, PSW, TKN;
+       Function sk, pw;
+       Format f1, f2;
+
+Knowledge: 
+        Client: Client, Server, mitId, pk(mitId), pk(Server), sk(Client, mitId), pw(mitId,Client), pw(Client, Server);
+        Server: Client, mitId, pk(mitId), pk(Server), inv(pk(Server)), pw(Client, Server);
+        mitId: Client, Server, mitId, pk(mitId), inv(pk(mitId)), sk(Client, mitId), pw(mitId,Client)
+        # Client has no pair of private/public key
+        # pw(Client, Server) not used, introduced for further development to be used instead of PSW in case 
+        # we want to define a login only protocol instead of registration
+
+Actions:
+        # Assumption: Estabilish a secure pseudonymous channel between Client and Server with Unilateral TLS
+
+        # Client sends hello to Server
+        [Client] *->* Server : Client, Server
+
+        # Server redirects Client to mitId authentication
+        Server *->* [Client] : Client, Server, mitId, TKN
+
+        # Client starts authentication with mitid by getting the nonce SessionId
+        Client -> mitId : Client, mitId, CPR, NClient
+        mitId -> Client : mitId, Client, {|f1(SessionId, NClient, mitId)|}sk(Client, mitId)
+
+        # Client authenticates via mitId ands sends request for certificate
+        Client -> mitId : SessionId, {|f1(Client, CPR, TKN)|}sk(Client, mitId)
+
+        # mitId sends certificate to Client
+        mitId -> Client : {f2(Client, CPR, mitId, TKN)}inv(pk(mitId))
+
+        # Client sends a request for a service, including her certificate for authentication to Server
+        Client *->* Server : Client, Server, {f1({f2(Client, CPR, mitId, TKN)}inv(pk(mitId)), TKN, PSW)}pk(Server)
+
+Goals:
+        mitId authenticates Client on SessionId
+        Client authenticates mitId on NClient
+        Server authenticates Client on TKN
+        PSW secret between Client, Server

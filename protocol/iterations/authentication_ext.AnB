@@ -1,0 +1,25 @@
+Protocol: SecureTicket_Auth 
+
+Types: Agent Client,mitId,SecureTicket;
+       Number VenueId,SessionId,VenueInfo;
+       Function h,sk
+
+Knowledge: Client: Client,mitId,SecureTicket,pk(mitId);
+	   mitId: Client,mitId,pk(mitId),inv(pk(mitId));
+	   SecureTicket: mitId,SecureTicket,pk(mitId)
+          where SecureTicket!=Client, SecureTicket!=mitId, Client!=mitId
+
+Actions:
+       [Client] *->* SecureTicket  : Client,SecureTicket,VenueId
+       SecureTicket *->* [Client] : Client,mitId,SecureTicket,SessionId,VenueId
+
+       Client  *->* mitId : Client,mitId,SecureTicket,SessionId
+       mitId *->* Client   : SessionId,SecureTicket,mitId,{SessionId,Client,mitId,SecureTicket}inv(pk(mitId))
+
+       [Client] *->* SecureTicket  : SessionId,SecureTicket,mitId,{SessionId,Client,mitId,SecureTicket}inv(pk(mitId)),VenueId
+       SecureTicket *->* [Client] : VenueInfo,SessionId
+
+Goals:
+       SecureTicket authenticates Client on VenueId
+       Client authenticates SecureTicket on VenueInfo
+       VenueInfo secret between SecureTicket,Client

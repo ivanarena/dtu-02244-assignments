@@ -1,0 +1,29 @@
+Protocol: SecureTicket_Validation 
+
+Types: Agent Client, VenueDevice, server;
+       Number VenueId, TICKET, TicketConsumed;
+       Function h, sk
+
+Knowledge: Client: Client, VenueDevice, server, pk(server), pk(VenueDevice);
+        VenueDevice: VenueDevice, Client, server, pk(server), inv(pk(server)), inv(pk(VenueDevice));
+	    server: VenueDevice, Client, server, pk(VenueDevice), inv(pk(server));
+
+Actions:    
+    # Assumptions:
+    #   - validation_tls makes the channel server<->Client secure (they share a secret thanks to mitId auth)
+    #   - authPseudo makes the channel server<->venueDevice secure
+    #   - given validation_tls and authPseudo, also the channel Client<->VenueDevice is secure
+
+    # establish TLS between Client <-> Server from authentication protocol
+    # login using data from the authentication protocol to see TICKET in the app
+
+    Client *->* VenueDevice : Client, VenueDevice, {TICKET, Datetime}pk(server)
+
+    VenueDevice *->* server : VenueDevice, server, Client, {TICKET, Datetime}pk(server)
+    server *->* VenueDevice : server, VenueDevice, {TicketConsumed, Datetime}inv(pk(server))
+
+    VenueDevice *->* Client : {TicketConsumed, Datetime}inv(pk(VenueDevice))
+
+Goals:
+    VenueDevice authenticates Client on TICKET
+    Client authenticates VenueDevice on TicketConsumed

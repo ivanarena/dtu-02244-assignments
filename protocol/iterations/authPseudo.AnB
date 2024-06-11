@@ -1,0 +1,32 @@
+Protocol: SecureTicketValidation
+Types: 
+    Agent Venue, SecureTicket, s; # s is a certificate authority
+    Number VenueId, SessionId, TicketInfo, TicketOk, PK; # PK is a fresh public key created by Venue
+    Function pk, hash, clientK, serverK, prf
+
+Knowledge:
+    Venue: Venue, SecureTicket, pk(s), pk(SecureTicket), hash, clientK, serverK, prf;
+    SecureTicket: Venue,SecureTicket, pk(SecureTicket), inv(pk(SecureTicket)), {SecureTicket, pk(SecureTicket)}inv(pk(s)), hash, clientK, serverK, prf
+
+Actions:
+# Venue initiates the protocol with a fresh public key PK and ticket information
+Venue -> SecureTicket: Venue, SessionId, {PK, TicketInfo}pk(SecureTicket)
+
+# SecureTicket responds, acknowledging the ticket validation request
+SecureTicket -> Venue: SessionId, TicketOk, {SecureTicket, pk(SecureTicket)}inv(pk(s)), 
+                        {hash(TicketInfo, TicketOk, SecureTicket, Venue)}PK,
+                        {|hash(prf(PK, SessionId, TicketInfo), Venue, SecureTicket, SessionId, TicketInfo)|}
+                            clientK(SessionId, prf(PK, SessionId, TicketInfo))
+    
+# Secure pseudonymous channel established
+[Venue] *->* SecureTicket: {|PayloadVenue|}clientK(SessionId, prf(PK, SessionId, TicketInfo))
+SecureTicket *->* [Venue]: {|PayloadSecureTicket|}serverK(SessionId, prf(PK, SessionId, TicketInfo))
+
+Goals:
+    # With the client not authenticated, these goals are commented out
+    # Venue authenticates SecureTicket on TicketOk
+    # TicketInfo secret between Venue, SecureTicket
+    
+    # Achievable goals
+    SecureTicket authenticates Venue on PK; # Venue is authenticated with respect to a pseudonym (PK)
+    # Establishment of a secure pseudonymous channel;

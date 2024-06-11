@@ -1,0 +1,28 @@
+Protocol: TLS  # pseudo authentication
+
+Types: Agent A,B,s;
+       Number NA,NB,Sid,PA,PB,PMS;
+       Function pk,hash,clientK,serverK,prf
+
+Knowledge: A: A,pk(s),B, hash,clientK,serverK,prf;
+B: B,pk(B),pk(s),inv(pk(B)),{B,pk(B)}inv(pk(s)),hash,clientK,serverK,prf
+
+Actions:
+
+A->B: A,NA,Sid,PA
+B->A: NB,Sid,PB,
+      {B,pk(B)}inv(pk(s))
+A->B: A,PK,
+        {PMS}pk(B),
+	    {hash(NB,B,PMS)}inv(PK),
+	    {|hash(prf(PMS,NA,NB),A,B,NA,NB,Sid,PA,PB,PMS)|}
+	      clientK(NA,NB,prf(PMS,NA,NB))
+B->A: 	{|hash(prf(PMS,NA,NB),A,B,NA,NB,Sid,PA,PB,PMS)|}
+	      serverK(NA,NB,prf(PMS,NA,NB))
+
+Goals:
+
+  #B authenticates A on prf(PMS,NA,NB)
+  A authenticates B on prf(PMS,NA,NB)
+  #prf(PMS,NA,NB) secret between A,B
+

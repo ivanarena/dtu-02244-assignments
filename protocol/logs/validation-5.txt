@@ -1,0 +1,57 @@
+INPUT:
+   Protocol: SecureTicket_Validation 
+
+Types: Agent Client,VenueDevice,secureTicket;
+       Number VenueDeviceId,SessionId,TICKET,TicketConfirm;
+       Function h,sk
+
+Knowledge: Client: Client,VenueDevice,inv(pk(Client)),pk(Client),pk(VenueDevice),pk(secureTicket);
+        VenueDevice: VenueDevice,Client,secureTicket,pk(secureTicket),inv(pk(VenueDevice)),pk(Client);
+	    secureTicket: VenueDevice,Client,secureTicket,pk(VenueDevice),inv(pk(secureTicket)),pk(Client);
+
+Actions:
+    [Client] *->* VenueDevice : {{Client,TICKET}pk(secureTicket)}inv(pk(Client))
+    VenueDevice *->* secureTicket : VenueDevice,secureTicket,{{Client,TICKET}pk(secureTicket)}inv(pk(Client))
+    secureTicket *->* VenueDevice : secureTicket,VenueDevice,{TicketConfirm}inv(pk(secureTicket))
+    VenueDevice *->* [Client] : {{TicketConfirm}inv(pk(VenueDevice))}pk(Client)
+
+Goals:
+    TICKET secret between Client,secureTicket
+    secureTicket authenticates Client on Client,TICKET
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  strong_auth
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 1320 ms
+  parseTime 0 ms
+  visitedNodes: 459 nodes
+  depth: 3 plies
+
+ATTACK TRACE:
+(x502,1) -> i: pseudonym(x502),{{{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(pseudonym(x502))}_(confChCr(i))
+i -> (secureTicket,1): {{i,secureTicket,{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(authChCr(i))}_(confChCr(secureTicket))
+(secureTicket,1) -> i: {{secureTicket,i,{TicketConfirm(2)}_inv(pk(secureTicket))}_inv(authChCr(secureTicket))}_(confChCr(i))
+i -> (secureTicket,2): {{i,secureTicket,{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(authChCr(i))}_(confChCr(secureTicket))
+(secureTicket,2) -> i: {{secureTicket,i,{TicketConfirm(3)}_inv(pk(secureTicket))}_inv(authChCr(secureTicket))}_(confChCr(i))
+
+
+% Reached State:
+% 
+% request(secureTicket,x502,psecureTicketClientClientTICKET,x502,TICKET(1),2)
+% request(secureTicket,x502,psecureTicketClientClientTICKET,x502,TICKET(1),1)
+% contains(secrecyset(secureTicket,2,pTICKET),secureTicket)
+% contains(secrecyset(secureTicket,2,pTICKET),x502)
+% secrets(TICKET(1),secrecyset(secureTicket,2,pTICKET),i)
+% state_rsecureTicket(secureTicket,1,pk(x502),inv(pk(secureTicket)),pk(i),x502,i,inv(pseudonym(secureTicket)),inv(confChCr(secureTicket)),inv(authChCr(secureTicket)),pseudonym(secureTicket),TICKET(1),{x502,TICKET(1)}_(pk(secureTicket)),{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502)),{i,secureTicket,{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(authChCr(i)),{{i,secureTicket,{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(authChCr(i))}_(confChCr(secureTicket)),TicketConfirm(3),{{secureTicket,i,{TicketConfirm(3)}_inv(pk(secureTicket))}_inv(authChCr(secureTicket))}_(confChCr(i)),2)
+% contains(secrecyset(secureTicket,1,pTICKET),secureTicket)
+% contains(secrecyset(secureTicket,1,pTICKET),x502)
+% secrets(TICKET(1),secrecyset(secureTicket,1,pTICKET),i)
+% state_rVenueDevice(x29,0,pk(x30),inv(pk(x29)),pk(secureTicket),secureTicket,x30,inv(pseudonym(x29)),inv(confChCr(x29)),inv(authChCr(x29)),pseudonym(x29),1)
+% state_rClient(x502,1,pk(secureTicket),pk(i),pk(x502),inv(pk(x502)),i,inv(pseudonym(x502)),inv(confChCr(x502)),inv(authChCr(x502)),pseudonym(x502),TICKET(1),pseudonym(x502),{{{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(pseudonym(x502))}_(confChCr(i)),1)
+% state_rsecureTicket(secureTicket,1,pk(x502),inv(pk(secureTicket)),pk(i),x502,i,inv(pseudonym(secureTicket)),inv(confChCr(secureTicket)),inv(authChCr(secureTicket)),pseudonym(secureTicket),TICKET(1),{x502,TICKET(1)}_(pk(secureTicket)),{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502)),{i,secureTicket,{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(authChCr(i)),{{i,secureTicket,{{x502,TICKET(1)}_(pk(secureTicket))}_inv(pk(x502))}_inv(authChCr(i))}_(confChCr(secureTicket)),TicketConfirm(2),{{secureTicket,i,{TicketConfirm(2)}_inv(pk(secureTicket))}_inv(authChCr(secureTicket))}_(confChCr(i)),1)
+% state_rClient(x33,0,pk(secureTicket),pk(x35),pk(x33),inv(pk(x33)),x35,inv(pseudonym(x33)),inv(confChCr(x33)),inv(authChCr(x33)),pseudonym(x33),2)
+% state_rVenueDevice(x36,0,pk(x37),inv(pk(x36)),pk(secureTicket),secureTicket,x37,inv(pseudonym(x36)),inv(confChCr(x36)),inv(authChCr(x36)),pseudonym(x36),2)
+% witness(x502,secureTicket,psecureTicketClientClientTICKET,x502,TICKET(1))

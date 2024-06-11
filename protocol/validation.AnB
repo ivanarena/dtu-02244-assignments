@@ -1,0 +1,41 @@
+Protocol: SecureTicket_Validation 
+
+Types: Agent Client, VenueDevice, server;
+       Number VenueId, TICKET, TicketConsumed;
+       Function h, sk;
+       Format f1, f2;
+
+Knowledge: Client: Client, VenueDevice, server, pk(server), pk(VenueDevice);
+        VenueDevice: VenueDevice, Client, server, pk(server), pk(VenueDevice), inv(pk(VenueDevice));
+        server: VenueDevice, Client, server, pk(VenueDevice), pk(server), inv(pk(server));
+        where Client != VenueDevice, VenueDevice != server, Client != VenueDevice
+
+Actions:    
+    # Assumption: the channel VenueDevice<->server is secure, given by standard TLS
+
+    # before sending the ticket to the server, the Client needs to enstablish the connection with VenueDevice and the VenueDevice needs to send his identifier (VenueId) to the Client
+    # 1. Client send hello to VenueDevice
+    Client *->* VenueDevice : Client, VenueDevice
+
+    # VenueDevice needs to be registered by the server, that assigns an identifier (VenueId).
+    # This step happens only once, when the VenueDevice is registered, then VenueId is memorized by the VenueDevice to make the protocol faster.
+    VenueDevice *->* server : VenueDevice, server
+    server *->* VenueDevice : server, VenueDevice, {VenueId}pk(VenueDevice)
+
+    # 2. VenueDevice send his identifier to the Client, and Client can authenticate the VenueDevice
+    VenueDevice *->* Client : VenueDevice, Client, {VenueId}inv(pk(VenueDevice))
+
+    # the ticket is encrypted with the VenueId, also the current date and time of the validation are registered
+    Client *->* VenueDevice : Client, VenueDevice, {{|f1(TICKET, CPR)|}VenueId}pk(server)
+
+    # VenueDevice just needs to send all the information to the server, then is the server that will check if the ticket is valid.
+    VenueDevice *->* server : VenueDevice, server, {{|f1(TICKET, CPR)|}VenueId}pk(server)
+
+    # after checking the validity of the ticket, the server sends a confirmation to the VenueDevice that the ticket has been consumed
+    server *->* VenueDevice : server, VenueDevice, {f2(TicketConsumed, {|TicketConsumed|}TICKET, Datetime)}pk(VenueDevice)
+
+    # VenueDevice sends the confirmation to the Client
+    VenueDevice *->* Client : VenueDevice, Client, {f1({|TicketConsumed|}TICKET, Datetime)}inv(pk(VenueDevice))
+
+Goals:
+    Client authenticates VenueDevice on TicketConsumed

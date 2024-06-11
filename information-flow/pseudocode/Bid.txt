@@ -1,0 +1,54 @@
+// Live bid placed by User
+placed_bids = array[record[customer_id:string{A:A}, amount:int{⊥}]] // {A: A}
+commission = record[max_amount:int{⊥}, increment:int{⊥}, customer_id:string{A:A}] // {AH: S, AH}
+auction = record[auction_id:string{⊥}, customers:array[customer_id:string{server:server}]{server:server}, commissions_db:array[commission]{server:server}] // {AH: S, AH}
+bid = record[amount:int{⊥}, auction_id:string{⊥}, customer_id:string{server:server}] // {AH: S, AH}
+
+// check if the customer is registered for the auction and can bid
+check_permission(db:array[auction{⊥}]{⊥}, auction_id:string{⊥}, customer_id:string{server:server}) // {AH: S, AH}
+	returns ret:bool{client:server} // {AH: AH, S}
+
+	match: bool{client:server, server:server} := false; // {S: S}
+	for (i: int{server:server} := 0; i < db.length; i := i + 1)
+		if db[i].auction_id = auction_id
+			then match := true // {S, S}
+
+	ret := match // {AH: AH, S}
+
+// User place commission bid on auction
+place_commission(db:array[auction{⊥}]{⊥}, auction_id:string{⊥}, commission:commission{⊥}, commissions_db:array[record[auction_id:string{⊥}, commission]]) // {AH: A, AH}
+	returns ret:bool{client:server}  // {AH: A, AH}
+
+	if check_permission(db, bid.auction_id, bid.customer_id)
+		commissions_db := commissions_db + [record[auction_id:auction_id, commission:commission]] // {AH: A, AH}
+		then ret := true // {AH: AH, S}
+	else ret := false // {AH: AH, S}
+
+// User place live bid on auction
+place_bid(db:array[auction{⊥}]{⊥}, placed_bids:placed_bids{⊥}, bid:bid{⊥}) // {AH: A, AH}
+	returns ret:bool{client:server} // {AH: AH, S}
+
+	if check_permission(db, bid.auction_id, bid.customer_id)
+		auction := get_auction(db, bid.auction_id)  // {AH: AH, S}
+
+		then if (placed_bids[placed_bids.length - 1].amount < bid.amount)
+			placed_bids := placed_bids + [record[customer_id:bid.customer_id, amount:bid.amount]]  // {A: AH, A}
+
+			// check if any commission bids need to be placed
+			for (i: int{server:server} := 0; i < auction.commissions_db.length; i := i + 1)
+				if (bid.amount < auction.commissions_db[i].max_amount) then
+					commission_bid := record[amount:bid.amount + auction.commissions_db[i].increment, customer_id:bid.customer_id] // {A: AH, A}
+					place_bid(db, placed_bids, commission_bid) // {AH: A, AH}
+			
+			ret := true // {AH: AH, S}
+		else ret := false // {AH: AH, S}
+	else
+		ret := false // {AH: AH, S}
+
+show_auction_result(db:array[auction{⊥}]{⊥}, auction_id:string{⊥}) // {}
+	returns ret:array[record[customer_id:string{server:server}, amount:int{⊥}]]{client:server} // {}
+	auction := get_auction(db, auction_id) // {AH: S, AH}
+	ret := auction.placed_bids[auction.placed_bids.length - 1] // show the highest bid. {}
+
+
+

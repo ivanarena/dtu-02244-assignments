@@ -1,0 +1,31 @@
+Protocol: SecureTicket_Purchase
+
+Types: Agent Client,SecureTicket,mobilePay;
+       Number TicketInfo, PurchaseId, PaymentInfo, PaymentConfirm, TICKET, TicketConfirm;
+       Function h,sk
+
+Knowledge: Client: Client, mobilePay, SecureTicket, pk(Client), inv(pk(Client)), pk(mobilePay), pk(SecureTicket);
+	   mobilePay: Client,mobilePay,pk(mobilePay),inv(pk(mobilePay));
+	   SecureTicket: mobilePay, SecureTicket, Client, pk(Client), pk(mobilePay), pk(SecureTicket), inv(pk(SecureTicket))
+          where SecureTicket!=Client, SecureTicket!=mobilePay, Client!=mobilePay
+
+Actions:
+       # client requests ticket info
+       Client *->* SecureTicket  : Client,SecureTicket,{TicketInfo}pk(SecureTicket)
+       
+       # SecureTicket initiate the purchase with a PurchaseId to be confirmed. purchase status = PENDING
+       SecureTicket *->* Client : Client,mobilePay,SecureTicket,{PurchaseId,TicketInfo}inv(pk(SecureTicket))
+
+       Client *->* mobilePay : Client,mobilePay,SecureTicket,{PurchaseId,PaymentInfo}pk(mobilePay)
+       mobilePay *->* Client : SecureTicket,mobilePay,{PurchaseId,PaymentConfirm,Client,mobilePay,SecureTicket}inv(pk(mobilePay))
+
+       Client *->* SecureTicket  : PurchaseId,SecureTicket,mobilePay,{PurchaseId,PaymentConfirm,Client,mobilePay,SecureTicket}inv(pk(mobilePay)) # purchase status = PAID
+       SecureTicket *->* Client : Client,PurchaseId,{TICKET}pk(Client)
+
+       # Client *->* SecureTicket : SecureTicket,{TicketConfirm,TICKET}pk(SecureTicket) # purchase status = BOOKED
+
+Goals:
+       SecureTicket authenticates Client on TicketInfo
+       TicketInfo secret between SecureTicket, Client
+       Client authenticates SecureTicket on TICKET
+       TICKET secret between SecureTicket, Client

@@ -1,0 +1,95 @@
+Verified for 1 sessions
+INPUT:
+   Protocol: SecureTicket_Validation 
+
+Types: Agent Client, VenueDevice, server;
+       Number VenueId, TICKET, TicketConsumed;
+       Function h, sk
+
+Knowledge: Client: Client, VenueDevice, server, pk(server), pk(VenueDevice);
+        VenueDevice: VenueDevice, Client, server, pk(server), pk(VenueDevice), inv(pk(VenueDevice));
+        server: VenueDevice, Client, server, pk(VenueDevice), pk(server), inv(pk(server));
+        where Client != VenueDevice, VenueDevice != server, Client != VenueDevice
+
+Actions:    
+    # Assumptions:
+    #   - the channel VenueDevice<->server is secure, given by standard TLS
+    #   - given validation_tls and authPseudo, also the channel Client<->VenueDevice is secure
+
+    # login using data from the authentication protocol to see TICKET in the app
+
+    # before sending the ticket to the server, the Client needs to enstablish the connection with VenueDevice and the VenueDevice needs to send his identifier (VenueId) to the Client
+    # 1. Client send hello to VenueDevice
+    Client *->* VenueDevice : Client, VenueDevice
+
+    # VenueDevice needs to be registered by the server, that assigns an identifier (VenueId).
+    # This step happens only once, when the VenueDevice is registered, then VenueId is memorized by the VenueDevice to make the protocol faster.
+    VenueDevice *->* server : VenueDevice, server
+    server *->* VenueDevice : server, VenueDevice, {VenueId}pk(VenueDevice)
+
+    # 2. VenueDevice send his identifier to the Client, and Client can authenticate the VenueDevice
+    VenueDevice *->* Client : VenueDevice, Client, {VenueId}inv(pk(VenueDevice))
+
+    # TLS between Client and VenueDevice is enstablished here before sending the ticket
+
+    # the ticket is encrypted with the VenueId, also the current date and time of the validation are registered
+    Client *->* VenueDevice : Client, VenueDevice, {{|TICKET, CPR|}VenueId}pk(server)
+
+    # VenueDevice just needs to send all the information to the server, then is the server that will check if the ticket is valid.
+    VenueDevice *->* server : VenueDevice, server, {{|TICKET, CPR|}VenueId}pk(server)
+
+    # after checking the validity of the ticket, the server sends a confirmation to the VenueDevice that the ticket has been consumed
+    server *->* VenueDevice : server, VenueDevice, {TicketConsumed, {|TicketConsumed|}TICKET, Datetime}pk(VenueDevice)
+
+    # VenueDevice sends the confirmation to the Client
+    VenueDevice *->* Client : VenueDevice, Client, {{|TicketConsumed|}TICKET, Datetime}inv(pk(VenueDevice))
+
+Goals:
+    VenueDevice authenticates Client on VenueId
+    Client authenticates VenueDevice on TicketConsumed
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  weak_auth
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 6135219 ms
+  parseTime 0 ms
+
+ATTACK TRACE:
+(x1402,1) -> i: {{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401))
+(x1402,2) -> i: {{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401))
+i -> (x1401,1): {{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401))
+(x1401,1) -> i: {{x1401,server}_inv(authChCr(x1401))}_(confChCr(server))
+i -> (x1401,2): {{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401))
+(x1401,2) -> i: {{x1401,server}_inv(authChCr(x1401))}_(confChCr(server))
+i -> (server,1): {{x1401,server}_inv(authChCr(x1401))}_(confChCr(server))
+(server,1) -> i: {{server,x1401,{VenueId(5)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401))
+i -> (server,2): {{x1401,server}_inv(authChCr(x1401))}_(confChCr(server))
+(server,2) -> i: {{server,x1401,{VenueId(6)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401))
+i -> (x1401,1): {{server,x1401,{VenueId(6)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401))
+(x1401,1) -> i: {{x1401,x1402,{VenueId(6)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402))
+i -> (x1401,2): {{server,x1401,{VenueId(5)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401))
+(x1401,2) -> i: {{x1401,x1402,{VenueId(5)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402))
+i -> (x1402,1): {{x1401,x1402,{VenueId(5)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402))
+(x1402,1) -> i: {{x1402,x1401,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1402))}_(confChCr(x1401))
+i -> (x1401,1): {{x1402,x1401,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1402))}_(confChCr(x1401))
+(x1401,1) -> i: {{x1401,server,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1401))}_(confChCr(server))
+i -> (server,1): {{x1401,server,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1401))}_(confChCr(server))
+(server,1) -> i: {{server,x1401,{TicketConsumed(11),{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401))
+i -> (x1401,1): {{server,x1401,{TicketConsumed(11),{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401))
+(x1401,1) -> i: {{x1401,x1402,{{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402))
+
+
+% Reached State:
+% 
+% request(x1401,x1402,pVenueDeviceClientVenueId,VenueId(6),1)
+% state_rVenueDevice(x1401,4,inv(pk(x1401)),pk(x1401),pk(server),server,x1402,inv(pseudonym(x1401)),inv(confChCr(x1401)),inv(authChCr(x1401)),pseudonym(x1401),{x1402,x1401}_inv(authChCr(x1402)),{{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401)),{{x1401,server}_inv(authChCr(x1401))}_(confChCr(server)),VenueId(6),{VenueId(6)}_(pk(x1401)),{server,x1401,{VenueId(6)}_(pk(x1401))}_inv(authChCr(server)),{{server,x1401,{VenueId(6)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401)),{{x1401,x1402,{VenueId(6)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402)),{x1402,x1401,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1402)),{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server)),{{x1402,x1401,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1402))}_(confChCr(x1401)),{{x1401,server,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1401))}_(confChCr(server)),Datetime(11),{|TicketConsumed(11)|}_TICKET(9),TicketConsumed(11),{TicketConsumed(11),{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_(pk(x1401)),{server,x1401,{TicketConsumed(11),{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_(pk(x1401))}_inv(authChCr(server)),{{server,x1401,{TicketConsumed(11),{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401)),{{x1401,x1402,{{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402)),1)
+% witness(x1401,x1402,pClientVenueDeviceTicketConsumed,TicketConsumed(11))
+% state_rClient(x1402,1,pk(x1401),pk(server),server,x1401,inv(pseudonym(x1402)),inv(confChCr(x1402)),inv(authChCr(x1402)),pseudonym(x1402),{{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401)),2)
+% state_rserver(server,1,inv(pk(server)),pk(server),pk(x1401),x39,x1401,inv(pseudonym(server)),inv(confChCr(server)),inv(authChCr(server)),pseudonym(server),{x1401,server}_inv(authChCr(x1401)),{{x1401,server}_inv(authChCr(x1401))}_(confChCr(server)),VenueId(6),{{server,x1401,{VenueId(6)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401)),2)
+% state_rVenueDevice(x1401,2,inv(pk(x1401)),pk(x1401),pk(server),server,x1402,inv(pseudonym(x1401)),inv(confChCr(x1401)),inv(authChCr(x1401)),pseudonym(x1401),{x1402,x1401}_inv(authChCr(x1402)),{{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401)),{{x1401,server}_inv(authChCr(x1401))}_(confChCr(server)),VenueId(5),{VenueId(5)}_(pk(x1401)),{server,x1401,{VenueId(5)}_(pk(x1401))}_inv(authChCr(server)),{{server,x1401,{VenueId(5)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401)),{{x1401,x1402,{VenueId(5)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402)),2)
+% state_rClient(x1402,2,pk(x1401),pk(server),server,x1401,inv(pseudonym(x1402)),inv(confChCr(x1402)),inv(authChCr(x1402)),pseudonym(x1402),{{x1402,x1401}_inv(authChCr(x1402))}_(confChCr(x1401)),VenueId(5),{VenueId(5)}_inv(pk(x1401)),{x1401,x1402,{VenueId(5)}_inv(pk(x1401))}_inv(authChCr(x1401)),{{x1401,x1402,{VenueId(5)}_inv(pk(x1401))}_inv(authChCr(x1401))}_(confChCr(x1402)),TICKET(9),CPR(9),{{x1402,x1401,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1402))}_(confChCr(x1401)),1)
+% state_rserver(server,2,inv(pk(server)),pk(server),pk(x1401),x32,x1401,inv(pseudonym(server)),inv(confChCr(server)),inv(authChCr(server)),pseudonym(server),{x1401,server}_inv(authChCr(x1401)),{{x1401,server}_inv(authChCr(x1401))}_(confChCr(server)),VenueId(5),{{server,x1401,{VenueId(5)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401)),CPR(9),TICKET(9),{|TICKET(9),CPR(9)|}_VenueId(5),{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server)),{x1401,server,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1401)),{{x1401,server,{{|TICKET(9),CPR(9)|}_VenueId(5)}_(pk(server))}_inv(authChCr(x1401))}_(confChCr(server)),TicketConsumed(11),Datetime(11),{{server,x1401,{TicketConsumed(11),{|TicketConsumed(11)|}_TICKET(9),Datetime(11)}_(pk(x1401))}_inv(authChCr(server))}_(confChCr(x1401)),1)
+% witness(x1402,x1401,pVenueDeviceClientVenueId,VenueId(5))

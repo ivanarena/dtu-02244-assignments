@@ -1,0 +1,33 @@
+Protocol: Server_ValidationTLS
+
+Types: Agent Client,VenueDevice,server;
+       Number NA,NB,Sid,PA,PB,PMS;
+       Function pk,hash,clientK,serverK, prf
+
+Knowledge: Client: Client,pk(Client),pk(server),inv(pk(Client)),{Client,pk(Client)}inv(pk(server)),VenueDevice,hash,clientK,serverK,prf;
+	 VenueDevice: VenueDevice,pk(VenueDevice),pk(server),inv(pk(VenueDevice)),{VenueDevice,pk(VenueDevice)}inv(pk(server)),hash,clientK,serverK,prf
+
+Actions:
+
+        Client->VenueDevice: Client,NA,Sid,PA
+        
+        VenueDevice->Client: NB,Sid,PB,
+            {VenueDevice,pk(VenueDevice)}inv(pk(server))
+        
+        Client->VenueDevice: {Client,pk(Client)}inv(pk(server)),
+                    {PMS}pk(VenueDevice),
+                    {hash(NB,VenueDevice,PMS)}inv(pk(Client)),
+                    {|hash(prf(PMS,NA,NB),Client,VenueDevice,NA,NB,Sid,PA,PB,PMS)|}
+                        clientK(NA,NB,prf(PMS,NA,NB))
+        
+        VenueDevice->Client: {|hash(prf(PMS,NA,NB),Client,VenueDevice,NA,NB,Sid,PA,PB,PMS)|}
+            serverK(NA,NB,prf(PMS,NA,NB))
+
+Goals:
+
+  VenueDevice authenticates Client on prf(PMS,NA,NB)
+  Client authenticates VenueDevice on prf(PMS,NA,NB)
+  prf(PMS,NA,NB) secret between Client,VenueDevice
+
+
+

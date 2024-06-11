@@ -1,0 +1,76 @@
+
+
+Open-Source Fixedpoint Model-Checker version 2024
+Verified for 1 sessions
+INPUT:
+   validation.AnB
+
+    Protocol: SecureTicket_Validation 
+
+    Types: Agent Client, VenueDevice, server;
+        Number VenueId, TICKET, TicketConsumed;
+        Function h, sk
+
+    Knowledge: Client: Client, VenueDevice, server, pk(server), pk(VenueDevice);
+            VenueDevice: VenueDevice, Client, server, pk(server), inv(pk(server)), inv(pk(VenueDevice));
+            server: VenueDevice, Client, server, pk(VenueDevice), inv(pk(server));
+
+    Actions:    
+        # Assumptions:
+        #   - validation_tls makes the channel server<->Client secure (they share a secret thanks to mitId auth)
+        #   - authPseudo makes the channel server<->venueDevice secure
+        #   - given validation_tls and authPseudo, also the channel Client<->VenueDevice is secure
+
+        # establish TLS between Client <-> Server from authentication protocol
+        # login using data from the authentication protocol to see TICKET in the app
+
+        Client *->* VenueDevice : Client, VenueDevice, {TICKET, Datetime}pk(server)
+
+        VenueDevice *->* server : VenueDevice, server, Client, {TICKET, Datetime}pk(server)
+        server *->* VenueDevice : server, VenueDevice, {TicketConsumed, Datetime}inv(pk(server))
+
+        VenueDevice *->* Client : {TicketConsumed, Datetime}inv(pk(VenueDevice))
+
+    Goals:
+        VenueDevice authenticates Client on TICKET
+        Client authenticates VenueDevice on TicketConsumed
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  strong_auth
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 68191 ms
+  parseTime 0 ms
+
+ATTACK TRACE:
+(x20,1) -> i: {{x20,x24,{TICKET(1),Datetime(1)}_(pk(server))}_inv(authChCr(x20))}_(confChCr(x24))
+(x1002,2) -> i: {{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002))}_(confChCr(x1001))
+i -> (x1001,1): {{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002))}_(confChCr(x1001))
+(x1001,1) -> i: {{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001))}_(confChCr(server))
+i -> (x1001,2): {{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002))}_(confChCr(x1001))
+(x1001,2) -> i: {{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001))}_(confChCr(server))
+i -> (server,2): {{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001))}_(confChCr(server))
+(server,2) -> i: {{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x1001))
+i -> (x1001,1): {{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x1001))
+(x1001,1) -> i: {{{TicketConsumed(5),Datetime(2)}_inv(pk(x1001))}_inv(authChCr(x1001))}_(confChCr(x1002))
+i -> (server,1): {{i,server,x32,{x807,x808}_(pk(server))}_inv(authChCr(i))}_(confChCr(server))
+(server,1) -> i: {{server,i,{TicketConsumed(7),x808}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(i))
+i -> (x1001,2): {{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x1001))
+(x1001,2) -> i: {{{TicketConsumed(5),Datetime(2)}_inv(pk(x1001))}_inv(authChCr(x1001))}_(confChCr(x1002))
+
+
+% Reached State:
+% 
+% request(x1001,x1002,pVenueDeviceClientTICKET,TICKET(2),2)
+% request(x1001,x1002,pVenueDeviceClientTICKET,TICKET(2),1)
+% state_rVenueDevice(x1001,2,inv(pk(x1001)),inv(pk(server)),pk(server),server,x1002,inv(pseudonym(x1001)),inv(confChCr(x1001)),inv(authChCr(x1001)),pseudonym(x1001),Datetime(2),TICKET(2),{TICKET(2),Datetime(2)}_(pk(server)),{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002)),{{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002))}_(confChCr(x1001)),{{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001))}_(confChCr(server)),TicketConsumed(5),{TicketConsumed(5),Datetime(2)}_inv(pk(server)),{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server)),{{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x1001)),{{{TicketConsumed(5),Datetime(2)}_inv(pk(x1001))}_inv(authChCr(x1001))}_(confChCr(x1002)),2)
+% witness(x1001,x1002,pClientVenueDeviceTicketConsumed,TicketConsumed(5))
+% state_rserver(server,1,inv(pk(server)),pk(x1001),x1002,x1001,inv(pseudonym(server)),inv(confChCr(server)),inv(authChCr(server)),pseudonym(server),Datetime(2),TICKET(2),{TICKET(2),Datetime(2)}_(pk(server)),{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001)),{{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001))}_(confChCr(server)),TicketConsumed(5),{{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x1001)),2)
+% state_rClient(x20,1,pk(x24),pk(server),server,x24,inv(pseudonym(x20)),inv(confChCr(x20)),inv(authChCr(x20)),pseudonym(x20),TICKET(1),Datetime(1),{{x20,x24,{TICKET(1),Datetime(1)}_(pk(server))}_inv(authChCr(x20))}_(confChCr(x24)),1)
+% state_rserver(server,1,inv(pk(server)),pk(i),x32,i,inv(pseudonym(server)),inv(confChCr(server)),inv(authChCr(server)),pseudonym(server),x808,x807,{x807,x808}_(pk(server)),{i,server,x32,{x807,x808}_(pk(server))}_inv(authChCr(i)),{{i,server,x32,{x807,x808}_(pk(server))}_inv(authChCr(i))}_(confChCr(server)),TicketConsumed(7),{{server,i,{TicketConsumed(7),x808}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(i)),1)
+% state_rVenueDevice(x1001,2,inv(pk(x1001)),inv(pk(server)),pk(server),server,x1002,inv(pseudonym(x1001)),inv(confChCr(x1001)),inv(authChCr(x1001)),pseudonym(x1001),Datetime(2),TICKET(2),{TICKET(2),Datetime(2)}_(pk(server)),{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002)),{{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002))}_(confChCr(x1001)),{{x1001,server,x1002,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1001))}_(confChCr(server)),TicketConsumed(5),{TicketConsumed(5),Datetime(2)}_inv(pk(server)),{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server)),{{server,x1001,{TicketConsumed(5),Datetime(2)}_inv(pk(server))}_inv(authChCr(server))}_(confChCr(x1001)),{{{TicketConsumed(5),Datetime(2)}_inv(pk(x1001))}_inv(authChCr(x1001))}_(confChCr(x1002)),1)
+% state_rClient(x1002,1,pk(x1001),pk(server),server,x1001,inv(pseudonym(x1002)),inv(confChCr(x1002)),inv(authChCr(x1002)),pseudonym(x1002),TICKET(2),Datetime(2),{{x1002,x1001,{TICKET(2),Datetime(2)}_(pk(server))}_inv(authChCr(x1002))}_(confChCr(x1001)),2)
+% witness(x20,x24,pVenueDeviceClientTICKET,TICKET(1))
+% witness(x1002,x1001,pVenueDeviceClientTICKET,TICKET(2))

@@ -1,0 +1,30 @@
+Protocol: TLS
+
+Types: Agent A,B,mitid;
+       Number NA,NB,Sid,PA,PB,PMS,CPR,PK;
+       Function pk,hash,clientK,serverK,prf,cpr, sk
+
+Knowledge: A: A,pk(mitid),{A,cpr(A),mitId}inv(pk(mitid)),B,hash,clientK,serverK,prf, mitid, sk(A,B);
+	   B: B,pk(B),inv(pk(B)),{B,pk(B)}inv(pk(mitid)),hash,clientK,serverK,prf, mitid
+
+Actions:
+
+A->B: A,NA,Sid, cpr(A), mitId, 
+B->A: NB,Sid,PB,
+      {B,pk(B)}inv(pk(mitid))
+A->B: A, PK,
+	{PMS}pk(B),
+	{hash(NB,B,PMS)}{A,cpr(A),mitId}inv(PK),
+	{|hash(prf(PMS,NA,NB),A,B,NA,NB,Sid,{A, cpr(A), mitId}inv(pk(mitid)),PB,PMS)|}
+	  clientK(NA,NB,prf(PMS,NA,NB))
+B->A: 	{|hash(prf(PMS,NA,NB),A,B,NA,NB,Sid,{A, cpr(A), mitId}inv(pk(mitid)),PB,PMS)|}
+	  serverK(NA,NB,prf(PMS,NA,NB))
+
+Goals:
+
+  B authenticates A on prf(PMS,NA,NB)
+  A authenticates B on prf(PMS,NA,NB)
+  prf(PMS,NA,NB) secret between A,B
+
+
+

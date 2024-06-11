@@ -1,0 +1,133 @@
+Protocol: SecureTicket_Authentication 
+
+Types: Agent Client, Server, mitId;
+       Number SessionId, NClient, CPR, Password;
+       Function sk, pw
+
+Knowledge: 
+        Client: Client, Server, mitId, pk(mitId), pk(Server), sk(Client, mitId), pw(mitId,Client);
+        Server: Client, mitId, pk(mitId), pk(Server), inv(pk(Server));
+        mitId: Client, Server, mitId, pk(mitId), inv(pk(mitId)), sk(Client, mitId), pw(mitId,Client)
+
+Actions:
+        # Client sends hello to Server
+        [Client] *->* Server : Client, Server
+
+        # Server redirects Client to mitId authentication
+        Server *->* [Client] : Client, Server, mitId, Token
+
+        # Client starts authentication with mitid by getting the nonce SessionId
+        Client -> mitId : Client, mitId, CPR, NClient
+        mitId -> Client : mitId, Client, {|SessionId, NClient, mitId|}sk(Client, mitId)
+
+        # Client authenticates via mitId ands sends request for certificate
+        Client -> mitId : SessionId, {|Client, CPR, pw(mitId,Client), Token|}sk(Client, mitId)
+
+        # mitId sends certificate to Client
+        mitId -> Client : {Client, CPR, mitId, Token}inv(pk(mitId))
+
+        # Establish TLS between Client <-> Server using certificates released from the ttp mitid
+        # TLS defined in tls_SecureTicket.AnB
+        # Client sends a request for a service, including her certificate for authentication to Server
+
+        Client *->* Server : Client, Server, {{Client, CPR, mitId, Token}inv(pk(mitId)), Token, Password}pk(Server)
+
+Goals:
+        mitId authenticates Client on SessionId
+        Client authenticates mitId on NClient
+        #Server authenticates Client on Token
+        Password secret between Client, Server
+
+
+Verified for 1 sessions
+INPUT:
+   /Users/gloriastucchi/Security-Protocols_Logic-for-Security/authentication.AnB
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  secrets
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 166528 ms
+  parseTime 0 ms
+
+ATTACK TRACE:
+(x39,1) -> i: pseudonym(x39),{{x39,x38}_inv(pseudonym(x39))}_(confChCr(x38))
+(x32,2) -> i: pseudonym(x32),{{x32,x31}_inv(pseudonym(x32))}_(confChCr(x31))
+i -> (x31,1): pseudonym(x32),{{x32,x31}_inv(pseudonym(x32))}_(confChCr(x31))
+(x31,1) -> i: {{x32,x31,mitId,Token(3)}_inv(authChCr(x31))}_(pseudonym(x32))
+i -> (x38,2): pseudonym(x39),{{x39,x38}_inv(pseudonym(x39))}_(confChCr(x38))
+(x38,2) -> i: {{x39,x38,mitId,Token(4)}_inv(authChCr(x38))}_(pseudonym(x39))
+i -> (x39,1): {{x39,x38,mitId,Token(4)}_inv(authChCr(x38))}_(pseudonym(x39))
+(x39,1) -> i: x39,mitId,CPR(5),NClient(5)
+i -> (mitId,2): x39,mitId,CPR(5),NClient(5)
+(mitId,2) -> i: mitId,x39,{|SessionId(6),NClient(5),mitId|}_(sk(x39,mitId))
+i -> (x39,1): mitId,x39,{|SessionId(6),NClient(5),mitId|}_(sk(x39,mitId))
+(x39,1) -> i: SessionId(6),{|x39,CPR(5),pw(mitId,x39),Token(4)|}_(sk(x39,mitId))
+i -> (x32,2): {{x32,x31,mitId,Token(3)}_inv(authChCr(x31))}_(pseudonym(x32))
+(x32,2) -> i: x32,mitId,CPR(8),NClient(8)
+i -> (mitId,2): SessionId(6),{|x39,CPR(5),pw(mitId,x39),Token(4)|}_(sk(x39,mitId))
+(mitId,2) -> i: {x39,CPR(5),mitId,Token(4)}_inv(pk(mitId))
+i -> (x38,2): {x39,x38,{{x39,CPR(5),mitId,Token(4)}_inv(pk(mitId)),Token(4),x1110}_(pk(x38))}_(confChCr(x38))
+i can produce secret x1110
+
+secret leaked: x1110
+
+
+Open-Source Fixedpoint Model-Checker version 2024
+Verified for 1 sessions
+INPUT:
+   /Users/gloriastucchi/Security-Protocols_Logic-for-Security/authentication.AnB
+SUMMARY:
+  ATTACK_FOUND
+GOAL:
+  secrets
+BACKEND:
+  Open-Source Fixedpoint Model-Checker version 2024
+STATISTICS:
+  TIME 81370 ms
+  parseTime 0 ms
+
+ATTACK TRACE:
+(x20,1) -> i: pseudonym(x20),{{x20,x24}_inv(pseudonym(x20))}_(confChCr(x24))
+(x34,2) -> i: pseudonym(x34),{{x34,x33}_inv(pseudonym(x34))}_(confChCr(x33))
+i -> (x33,1): pseudonym(x34),{{x34,x33}_inv(pseudonym(x34))}_(confChCr(x33))
+(x33,1) -> i: {{x34,x33,mitId,TKN(3)}_inv(authChCr(x33))}_(pseudonym(x34))
+i -> (x24,2): confChCr(i),{{x20,x24}_inv(confChCr(i))}_(confChCr(x24))
+(x24,2) -> i: {{x20,x24,mitId,TKN(4)}_inv(authChCr(x24))}_(confChCr(i))
+i -> (x20,1): {{x20,x24,mitId,TKN(4)}_inv(authChCr(x24))}_(pseudonym(x20))
+(x20,1) -> i: x20,mitId,CPR(5),NClient(5)
+i -> (mitId,2): x20,mitId,CPR(5),NClient(5)
+(mitId,2) -> i: mitId,x20,{|f1,SessionId(6),NClient(5),mitId|}_(sk(x20,mitId))
+i -> (x20,1): mitId,x20,{|f1,SessionId(6),NClient(5),mitId|}_(sk(x20,mitId))
+(x20,1) -> i: SessionId(6),{|f1,x20,CPR(5),TKN(4)|}_(sk(x20,mitId))
+i -> (x34,2): {{x34,x33,mitId,TKN(3)}_inv(authChCr(x33))}_(pseudonym(x34))
+(x34,2) -> i: x34,mitId,CPR(8),NClient(8)
+i -> (mitId,2): SessionId(6),{|f1,x20,CPR(5),TKN(4)|}_(sk(x20,mitId))
+(mitId,2) -> i: {f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId))
+i -> (x24,2): confChCr(i),{{x20,x24,{f1,{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),TKN(4),x1111}_(pk(x24))}_inv(confChCr(i))}_(confChCr(x24))
+i can produce secret x1111
+
+secret leaked: x1111
+
+adding TKN in clear text, only encrypted with pk(Server)
+
+% Reached State:
+% 
+% secrets(x1111,secrecyset(x24,2,pPSW),i)
+% request(x24,x20,pServerClientTKN,TKN(4),2)
+% contains(secrecyset(x24,2,pPSW),x20)
+% contains(secrecyset(x24,2,pPSW),x24)
+% state_rServer(x24,2,pw(x20,x24),inv(pk(x24)),pk(x24),pk(mitId),mitId,x20,f2,f1,inv(pseudonym(x24)),inv(confChCr(x24)),inv(authChCr(x24)),pseudonym(x24),{x20,x24}_inv(confChCr(i)
+),{{x20,x24}_inv(confChCr(i))}_(confChCr(x24)),confChCr(i),confChCr(i),{{x20,x24}_inv(confChCr(i))}_(confChCr(x24)),TKN(4),{{x20,x24,mitId,TKN(4)}_inv(authChCr(x24))}_(confChCr(i)),x1111,CPR(5),{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),{f1,{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),TKN(4),x1111}_(pk(x24)),{x20,x24,{f1,{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),TKN(4),x1111}_(pk(x24))}_inv(confChCr(i)),{{x20,x24,{f1,{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),TKN(4),x1111}_(pk(x24))}_inv(confChCr(i))}_(confChCr(x24)),confChCr(i),{{x20,x24,{f1,{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),TKN(4),x1111}_(pk(x24))}_inv(confChCr(i))}_(confChCr(x24)),2)                                                           % state_rClient(x34,2,pw(x34,x33),pw(mitId,x34),sk(x34,mitId),pk(x33),pk(mitId),mitId,x33,f2,f1,inv(pseudonym(x34)),inv(confChCr(x34)),inv(authChCr(x34)),pseudonym(x34),pseudonym(
+x34),{{x34,x33}_inv(pseudonym(x34))}_(confChCr(x33)),x911,TKN(3),{x34,x33,mitId,TKN(3)}_inv(authChCr(x33)),{{x34,x33,mitId,TKN(3)}_inv(authChCr(x33))}_(pseudonym(x34)),CPR(8),NClient(8),x34,mitId,CPR(8),NClient(8),2)                                                                                                                                              % state_rmitId(mitId,2,pw(mitId,x20),sk(x20,mitId),inv(pk(mitId)),pk(mitId),x43,x20,f2,f1,inv(pseudonym(mitId)),inv(confChCr(mitId)),inv(authChCr(mitId)),pseudonym(mitId),NClient(
+5),CPR(5),x20,mitId,CPR(5),NClient(5),SessionId(6),mitId,x20,{|f1,SessionId(6),NClient(5),mitId|}_(sk(x20,mitId)),{|f1,SessionId(6),NClient(5),mitId|}_(sk(x20,mitId)),TKN(4),{|f1,x20,CPR(5),TKN(4)|}_(sk(x20,mitId)),SessionId(6),{|f1,x20,CPR(5),TKN(4)|}_(sk(x20,mitId)),{f2,x20,CPR(5),mitId,TKN(4)}_inv(pk(mitId)),2)                                           % state_rmitId(mitId,0,pw(mitId,x35),sk(x35,mitId),inv(pk(mitId)),pk(mitId),x36,x35,f2,f1,inv(pseudonym(mitId)),inv(confChCr(mitId)),inv(authChCr(mitId)),pseudonym(mitId),1)
+% state_rServer(x33,1,pw(x34,x33),inv(pk(x33)),pk(x33),pk(mitId),mitId,x34,f2,f1,inv(pseudonym(x33)),inv(confChCr(x33)),inv(authChCr(x33)),pseudonym(x33),{x34,x33}_inv(pseudonym(x
+34)),{{x34,x33}_inv(pseudonym(x34))}_(confChCr(x33)),pseudonym(x34),pseudonym(x34),{{x34,x33}_inv(pseudonym(x34))}_(confChCr(x33)),TKN(3),{{x34,x33,mitId,TKN(3)}_inv(authChCr(x33))}_(pseudonym(x34)),1)                                                                                                                                                             % state_rClient(x20,3,pw(x20,x24),pw(mitId,x20),sk(x20,mitId),pk(x24),pk(mitId),mitId,x24,f2,f1,inv(pseudonym(x20)),inv(confChCr(x20)),inv(authChCr(x20)),pseudonym(x20),pseudonym(
+x20),{{x20,x24}_inv(pseudonym(x20))}_(confChCr(x24)),x611,TKN(4),{x20,x24,mitId,TKN(4)}_inv(authChCr(x24)),{{x20,x24,mitId,TKN(4)}_inv(authChCr(x24))}_(pseudonym(x20)),CPR(5),NClient(5),x20,mitId,CPR(5),NClient(5),SessionId(6),{|f1,SessionId(6),NClient(5),mitId|}_(sk(x20,mitId)),mitId,x20,{|f1,SessionId(6),NClient(5),mitId|}_(sk(x20,mitId)),SessionId(6),{|f1,x20,CPR(5),TKN(4)|}_(sk(x20,mitId)),1)                                                                                                                                          % witness(x20,x24,pServerClientTKN,TKN(4))
+% witness(mitId,x20,pClientmitIdNClient,NClient(5))
+% witness(x20,mitId,pmitIdClientSessionId,SessionId(6))
+% witness(x34,x33,pServerClientTKN,TKN(3))
+% request(mitId,x20,pmitIdClientSessionId,SessionId(6),2)
+
